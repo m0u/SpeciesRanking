@@ -10,7 +10,7 @@ The objective is not to output new influential species, but to demonstrate wheth
 
 ---
 
-## 🔍 Project Summary
+##  Project Summary
 
 Expert keystone ranking traditionally requires full Ecopath parameterization, long-term diet surveys, and ecological knowledge.  
 Our approach tests whether ML-based ranking similarity can match expert ordering using minimal data — biomass + diet + network metrics.
@@ -25,7 +25,7 @@ This study is *validation-focused* — similarity is the output.
 
 ---
 
-## 🌍 Ecosystem Sets Included
+##  Ecosystem Sets Included
 
 ### 🔹 Training Ecosystems (used for learning)
 | ID | Ecosystem | Region |
@@ -45,21 +45,10 @@ These are used to calculate how close ML ranking orders are to expert ground tru
 
 ---
 
-## 🧠 Ranking Similarity Workflow
+##  Ranking Similarity Workflow
 
-Biomass + Diet + Network
-            ↓
-    Feature Engineering
-            ↓
- ┌────────────────────────────┐
- │  Random Forest (RF)        │
- │  Label Propagation (LP)    │
- │  GraphSAGE (GNN)           │
- └────────────────────────────┘
-            ↓
-   Weighted Ensemble Model
-            ↓
-  Ranking Similarity Output
+Biomass + Diet + Network → Feature Engineering → { RF | LP | GraphSAGE } → Ensemble → Ranking Similarity
+
 
 ### Evaluation Metrics
 - **Top-K Overlap** — shared top species count
