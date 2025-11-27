@@ -24,7 +24,7 @@ These ecosystems provide the labeled reference needed to train Random Forest, La
 ### 🔹 Test Ecosystems (Used for Generalization Evaluation)
 | ID | Ecosystem | Region |
 |---|---|---|
-| **E4** | *To be inserted / placeholder* | — |
+| **E4** | Canadian Freshwater Ecosystem |  Canada |
 | **E5** | Cap de Creus MPA | Western Mediterranean |
 | **E6** | Bay of Biscay Shelf System | Northeast Atlantic |
 
