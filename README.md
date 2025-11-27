@@ -6,7 +6,7 @@ The study does **not generate new keystone species lists** — instead, it measu
 
 ---
 
-## 🌍 Study Ecosystems
+##  Study Ecosystems
 
 The models were trained and evaluated using six Ecopath-based trophic networks.
 
@@ -37,7 +37,7 @@ These are used to measure **ranking similarity** between model output and expert
 
 ---
 
-## 🎯 Purpose of This Repository
+##  Purpose of This Repository
 
 - To store structural + ecological feature matrices for **E1–E6 ecosystems**
 - To provide benchmark datasets for **ranking similarity analysis**
@@ -47,7 +47,7 @@ The goal of this study is *validation* — once similarity is proven, ecologists
 
 ---
 
-## 📜 Citation
+##  Citation
 
 If using this dataset, please cite:
 
