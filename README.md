@@ -60,7 +60,7 @@ Output = **Similarity percentage**, not a new species list.
 
 ---
 
-## 📁 Repository Structure
+##  Repository Structure
 
 data/
 ├── training/
@@ -94,9 +94,12 @@ assets/
 
 README.md
 
----
 
-## 🚀 How to Run
+
+
+
+
+##  How to Run
 
 ### 1. Install requirements
 ```bash
