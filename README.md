@@ -61,7 +61,6 @@ Output = **Similarity percentage**, not a new species list.
 ---
 
 ##  Repository Structure
-
 data/
 ├── training/
 │   ├── E1_Kinneret.csv
@@ -91,8 +90,6 @@ results/
 
 assets/
 └── overview.png
-
-README.md
 
 
 
