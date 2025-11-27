@@ -5,7 +5,7 @@ This repository contains ecosystem datasets and scripts used to evaluate how clo
 The objective is not to output new influential species, but to demonstrate whether this approach is reliable enough for ecological use when expert classifications are missing or incomplete.
 
 <p align="center">
-  <img src="assets/overview.png" width="650">
+  <img src="overview.png" width="650">
 </p>
 
 ---
