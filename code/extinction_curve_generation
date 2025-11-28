@@ -1,0 +1,80 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.metrics import auc
+
+# === Load diet matrix ===
+diet_df = pd.read_csv('diet_matrix_canada.csv', index_col=0)
+species_list = list(diet_df.index)
+n = len(species_list)
+
+# === Create species-to-index mapping ===
+species_to_idx = {species: idx for idx, species in enumerate(species_list)}
+diet_matrix = diet_df.values
+
+# === Load Excel with multiple ranking sheets ===
+excel_path = 'rank_ecosystem_3.xlsx'
+xl = pd.ExcelFile(excel_path)
+sheets = xl.sheet_names
+
+# === Plotting Setup ===
+plt.figure(figsize=(10, 6))
+colors = plt.cm.tab10.colors  # 10 distinct colors, can extend if needed
+
+# === Ideal extinction curve ===
+ideal_ranks = list(species_list)
+ideal_curve = []
+
+curr_matrix = diet_matrix.copy()
+removed_species = set()
+for species in ideal_ranks:
+    idx = species_to_idx[species]
+    removed_species.add(idx)
+    curr_matrix[idx, :] = 0
+    curr_matrix[:, idx] = 0
+    predator_no_prey = np.where(curr_matrix.sum(axis=1) == 0)[0]
+    all_extinct = set(predator_no_prey).union(removed_species)
+    ideal_curve.append(len(all_extinct) / n)
+
+x_vals = np.linspace(0, 1, len(ideal_curve))
+plt.plot(x_vals, ideal_curve, 'k--', label='Ideal Scenario', linewidth=2.5, zorder=5)
+
+# === Extinction curves from each ranking sheet ===
+for idx, sheet in enumerate(sheets):
+    try:
+        ranks_df = xl.parse(sheet)
+        ranks_df = ranks_df.sort_values('Rank')
+        species_order = ranks_df['Species'].tolist()
+
+        extinct_fraction = []
+        curr_matrix = diet_matrix.copy()
+        removed_species = set()
+
+        for species in species_order:
+            if species not in species_to_idx:
+                continue
+            idx_species = species_to_idx[species]
+            removed_species.add(idx_species)
+            curr_matrix[idx_species, :] = 0
+            curr_matrix[:, idx_species] = 0
+            predator_no_prey = np.where(curr_matrix.sum(axis=1) == 0)[0]
+            all_extinct = set(predator_no_prey).union(removed_species)
+            extinct_fraction.append(len(all_extinct) / n)
+
+        x = np.linspace(0, 1, len(extinct_fraction))
+        y = np.array(extinct_fraction)
+        area = auc(x, y)
+        color = colors[idx % len(colors)]  # cycle through colors
+        plt.plot(x, y, label=f'{sheet} (AUC={area:.3f})', linewidth=2, color=color)
+    except Exception as e:
+        print(f"Error processing sheet {sheet}: {e}")
+
+# === Final plot settings ===
+plt.xlabel("Fraction of Species Removed", fontsize=12)
+plt.ylabel("Fraction of Species Extinct", fontsize=12)
+plt.title("Extinction Curves from Multiple Ranking Methods", fontsize=14)
+plt.legend(loc='lower right', fontsize=9)
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.tight_layout()
+plt.show()
+
