@@ -75,9 +75,9 @@ def load_data():
         df = pd.read_excel(path, index_col=0)
         return pd.to_numeric(df.iloc[:, 0], errors='coerce')
 
-    diets = [pd.read_excel(f"diet_matrix_ecosystem{i}.xlsx", index_col=0) for i in [1, 2, 7, 3]]
-    biomasses = [pd.read_excel(f"biomass_ecosystem{i}.xlsx", index_col=0).squeeze() for i in [1, 2, 7, 3]]
-    ranks = [load_rank(f"rank_ecosystem{i}.xlsx") for i in [1, 2, 7]]
+    diets = [pd.read_excel(f"diet_matrix_ecosystem{i}.xlsx", index_col=0) for i in [1, 2, 3, 4]]
+    biomasses = [pd.read_excel(f"biomass_ecosystem{i}.xlsx", index_col=0).squeeze() for i in [1, 2, 3, 4]]
+    ranks = [load_rank(f"rank_ecosystem{i}.xlsx") for i in [1, 2, 3]]
     return diets, biomasses, ranks
 
 diets, biomasses, ranks = load_data()
