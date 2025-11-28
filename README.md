@@ -44,14 +44,15 @@ This study is *validation-focused* — similarity is the output.
 These are used to calculate how close ML ranking orders are to expert ground truth.
 
 ---
-### Input Data Used in This Project
+This sample file is a raw Ecopath trophic export used as an input dataset.  
+From this file we extract:
 
-| Component | Description | Used For |
-|----------|-------------|----------|
-| **Biomass** | Standing stock of each trophic group (t/km²) | Feature extraction, ranking signal |
-| **Diet Matrix** | Predator–prey feeding relationships (proportion of prey in diet) | Adjacency graph, GNN inputs, network metrics |
-| **Keystoneness Indices** | Ecopath-derived KS1–KS3 influence scores | Ground-truth comparison for model evaluation |
+1. **Biomass values** — used as node features for model learning
+2. **Diet composition matrix** — used to construct the food-web adjacency graph
+3. **Keystone indices** — used as reference rankings for model validation
 
+These variables serve as the core ecological inputs for species importance prediction,
+GraphSAGE training, Random Forest benchmarking, and extinction-cascade simulation.
 
 ##  Ranking Similarity Workflow
 
