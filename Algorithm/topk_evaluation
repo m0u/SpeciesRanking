@@ -1,8 +1,8 @@
 #### Algorithm: Top-K Agreement Between True and Predicted Rankings
 
 **Input:**
-- Excel file `RANK_Canada.xlsx` with multiple ground-truth sheets  
-- Excel file `predicted_ranks_combined_ecosystem3_exp8.xlsx` with prediction sheets  
+- Excel file `RANK.xlsx` with multiple ground-truth sheets  
+- Excel file `predicted_ranks.xlsx` with prediction sheets  
 - Set of K values (e.g., K = 5 and K = 10)
 
 **Steps:**
