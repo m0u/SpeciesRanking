@@ -44,6 +44,14 @@ This study is *validation-focused* — similarity is the output.
 These are used to calculate how close ML ranking orders are to expert ground truth.
 
 ---
+### Input Data Used in This Project
+
+| Component | Description | Used For |
+|----------|-------------|----------|
+| **Biomass** | Standing stock of each trophic group (t/km²) | Feature extraction, ranking signal |
+| **Diet Matrix** | Predator–prey feeding relationships (proportion of prey in diet) | Adjacency graph, GNN inputs, network metrics |
+| **Keystoneness Indices** | Ecopath-derived KS1–KS3 influence scores | Ground-truth comparison for model evaluation |
+
 
 ##  Ranking Similarity Workflow
 
