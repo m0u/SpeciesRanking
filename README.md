@@ -51,8 +51,7 @@ From this file we extract:
 2. **Diet composition matrix** — used to construct the food-web adjacency graph
 3. **Keystone indices** — used as reference rankings for model validation
 
-These variables serve as the core ecological inputs for species importance prediction,
-GraphSAGE training, Random Forest benchmarking, and extinction-cascade simulation.
+These variables serve as the core ecological inputs for species importance prediction.
 
 ##  Ranking Similarity Workflow
 
@@ -76,7 +75,7 @@ data/
 │   ├── E2_AltoGolfo.csv
 │   └── E3_CelticSea.csv
 ├── testing/
-│   ├── E4.csv
+│   ├── E4_CanadianFreshwaterSystems.csv
 │   ├── E5_CapDeCreus.csv
 │   └── E6_BayOfBiscay.csv
 
