@@ -8,14 +8,14 @@
 **Steps:**
 
 1. **Load ground-truth rankings**
-   - Open `RANK_Canada.xlsx` as an Excel workbook.
+   - Open `RANK.xlsx` as an Excel workbook.
    - For each sheet:
      - Read it into a DataFrame.
      - Set `Group name` as the index.
      - Store in a dictionary: `rank_sheets[ground_truth_name]`.
 
 2. **Load predicted rankings**
-   - Open `predicted_ranks_combined_ecosystem3_exp8.xlsx`.
+   - Open `predicted_ranks.xlsx`.
    - For each prediction sheet (`graph`, `regression`, `gcn`, `gcn_reg`):
      - Read into a DataFrame.
      - Set `Species` as the index.
