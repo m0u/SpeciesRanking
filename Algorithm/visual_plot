@@ -1,1 +1,138 @@
+### Algorithm: Species Ranking with SHAP-Based Feature Selection and Hybrid Models
+
+This script builds an explainable, hybrid machine learning pipeline to estimate
+species importance across ecosystems using Random Forest, Label Propagation,
+GraphSAGE, and a weighted ensemble, with SHAP and permutation importance for
+feature interpretation and selection.
+
+---
+
+#### Inputs
+
+For ecosystems 1, 2, 7 (training) and 3 (testing), the script uses:
+
+- `diet_matrix_ecosystem{i}.xlsx`  
+  Trophic interaction / diet composition matrix (predator × prey)
+
+- `biomass_ecosystem{i}.xlsx`  
+  Biomass values per species/functional group
+
+- `rank_ecosystem{i}.xlsx` (for i = 1, 2, 7)  
+  Ecopath-based keystone ranking (ground-truth target)
+
+---
+
+#### Step 1: Feature Construction (`construct_features`)
+
+For each ecosystem:
+
+1. Read the diet matrix and biomass vector.
+2. Fill missing diet values with zero, store as matrix `F`.
+3. Compute normalised flow matrices:
+   - Column-normalised `G` (prey contribution)
+   - Row-normalised `H` (predator diet fraction)
+4. Compute:
+   \[
+   Q = G - H^T
+   \]
+   and then:
+   \[
+   M = (I - Q)^{-1} - I
+   \]
+   where `I` is the identity matrix.
+5. Derive **RTI (Relative Total Impact)** as the row-wise sum of `M`.
+6. Build a directed graph from the diet matrix using `networkx`.
+7. Compute graph-based metrics:
+   - in-degree, out-degree, total degree  
+   - PageRank  
+   - closeness centrality  
+   - betweenness centrality
+8. Assemble a feature table per species:
+   - `pagerank`, `degree`, `in_degree`, `out_degree`,  
+   - `closeness`, `betweenness`,  
+   - `RTI`, `biomass`.
+
+---
+
+#### Step 2: Normalisation and Train/Test Split
+
+1. Apply `MinMaxScaler` using ecosystem 1 as reference:
+   - Fit on features from ecosystem 1  
+   - Transform features for ecosystems 2, 7, and 3
+2. Define:
+   - `X_train` = concatenated normalised features from ecosystems 1, 2, 7  
+   - `y_train` = concatenated Ecopath-based ranking values (ecosystems 1, 2, 7)  
+   - `X_test`  = normalised features from ecosystem 3
+3. Replace any remaining missing values with column means (or zero for features).
+
+---
+
+#### Step 3: Explainability – SHAP and Permutation Importance
+
+1. Train an initial `RandomForestRegressor` on `(X_train, y_train)`.
+2. Use `shap.Explainer` to compute SHAP values for all training samples.
+   - Visualise feature contributions using `shap.summary_plot`.
+3. Compute **permutation importance** using `sklearn.inspection.permutation_importance`.
+   - Estimate mean importance of each feature by measuring performance drop
+     when that feature is randomly permuted.
+4. Perform **feature selection**:
+   - Keep only features with permutation importance above a threshold
+     (e.g., `importance > 0.005`).
+   - Reduce `X_train` and `X_test` to this selected feature subset.
+
+---
+
+#### Step 4: Model Training
+
+1. **Random Forest (RF)**
+   - Train `RandomForestRegressor` on filtered `X_train`, `y_train`.
+   - Predict test scores for ecosystem 3 → `reg_pred`.
+
+2. **Label Propagation (LP)**
+   - Concatenate `X_train` and `X_test` into `X_all`.
+   - Concatenate `y_train` with NaNs for test species into `y_all`.
+   - Replace NaNs with label `-1` to mark unlabeled instances.
+   - Fit `LabelPropagation` using `X_all` and label vector.
+   - Extract propagated labels for test species → `lp_pred`.
+
+3. **GraphSAGE (GNN)**
+   - Build a k-nearest neighbors graph from `X_all` using `kneighbors_graph`
+     (`n_neighbors = 5`).
+   - Convert to `edge_index` format (PyTorch Geometric).
+   - Convert `X_all` and `y_all` to PyTorch tensors.
+   - Define `GraphSAGE_Reg` with two SAGEConv layers:
+     - input → hidden (ReLU) → output (regression).
+   - Train for 200 epochs with MSE loss on known labels only.
+   - Predict scores for all nodes, then extract test-node predictions → `gcn_pred`.
+
+---
+
+#### Step 5: Ensemble Ranking
+
+1. Combine predictions into a dictionary:
+   - `{"rf": reg_pred, "lp": lp_pred, "gcn": gcn_pred}`.
+2. Convert raw scores to ranks for each model (`rank(method='average')`).
+3. Compute a **weighted rank ensemble**:
+   \[
+   \text{EnsembleRank} = \frac{1 \cdot \text{RF\_rank} + 3 \cdot \text{LP\_rank} + 3 \cdot \text{GCN\_rank}}{1 + 3 + 3}
+   \]
+4. Sort species by ensemble rank to obtain final ranking.
+5. Save:
+   - `ensemble_rank_ecosystem4.csv` – final ensemble ranking.
+   - `predicted_ranks_ecosystem3_canada.csv` – all model scores and ensemble.
+   - `predicted_ranks_ecosystem3_canada.xlsx` – Excel with sheets:
+     - `RF` – Random Forest ranks  
+     - `LP` – Label Propagation ranks  
+     - `GS` – GraphSAGE ranks  
+     - `EM` – Ensemble ranks  
+
+---
+
+#### Output
+
+- Species-level importance scores from:
+  - Random Forest, Label Propagation, GraphSAGE, and Ensemble
+- SHAP-based feature contribution plots
+- Permutation importance bar plot
+- Final ranked species lists for the test ecosystem
 
