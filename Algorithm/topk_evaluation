@@ -1,0 +1,40 @@
+### Top-K Similarity Evaluation (`topk_evaluation.py`)
+
+This script evaluates how well different model-predicted species rankings agree with
+Ecopath-based keystone rankings, using Top-K overlap as a metric.
+
+#### Inputs
+
+- `RANK_Canada.xlsx`  
+  Contains multiple sheets of ground-truth rankings for the Canada ecosystem  
+  (e.g., different Ecopath-based or expert-derived keystone indices).  
+  Each sheet has:
+  - `Group name` – species/functional group name  
+  - `Rank` – reference keystone rank (1 = most important)
+
+- `predicted_ranks_combined_ecosystem3_exp8.xlsx`  
+  Contains model-predicted rankings for the same ecosystem, with sheets:
+  - `graph`       – graph-based (e.g., LP / PageRank-style) ranking  
+  - `regression`  – Random Forest or regression-based ranking  
+  - `gcn`         – GNN-based ranking (GraphSAGE or similar)  
+  - `gcn_reg`     – hybrid / regularized GNN-based ranking  
+  Each sheet has:
+  - `Species` – species/functional group name  
+  - `Rank`    – predicted rank (1 = most important)
+
+#### What the script does
+
+1. Loads all ground-truth ranking sheets from `RANK_Canada.xlsx`
+2. Loads all prediction sheets from `predicted_ranks_combined_ecosystem3_exp8.xlsx`
+3. For every combination of:
+   - Ground-truth sheet (`Ground Truth`)
+   - Prediction sheet (`Prediction`)
+4. It computes:
+   - **Top-5 Agreement**: fraction of overlap between top-5 true and predicted species  
+   - **Top-10 Agreement**: fraction of overlap between top-10 true and predicted species  
+   - Also stores the actual overlapping species sets
+5. Stores all results in a summary table and exports:
+   - `top_k_similarity_results.csv`
+
+This provides a compact way to compare which prediction method best recovers
+Ecopath-based keystone species for the Canada ecosystem across multiple definitions of “ground truth”.
