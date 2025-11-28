@@ -1,0 +1,20 @@
+### 🔥 Pipeline Steps
+
+1. Load Ecopath input:
+   - biomass
+   - diet matrix
+   - keystone ranking
+
+2. Compute features:
+   ✓ RTI from diet flow  
+   ✓ Network centrality (PR, Degree, Betweenness)  
+   ✓ Biomass scaling
+
+3. Train 3 ranking models:
+   - Random Forest
+   - Label Propagation
+   - GraphSAGE GNN
+
+4. Generate ensemble ranking using weighted voting
+
+5. Export output as CSV + Excel for ecological interpretation
