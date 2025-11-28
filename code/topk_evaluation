@@ -1,52 +1,43 @@
-#### Algorithm: Top-K Agreement Between True and Predicted Rankings
+import pandas as pd
 
-**Input:**
-- Excel file `RANK.xlsx` with multiple ground-truth sheets  
-- Excel file `predicted_ranks.xlsx` with prediction sheets  
-- Set of K values (e.g., K = 5 and K = 10)
+# Load Excel files
+rank_file = pd.ExcelFile("RANK_Canada.xlsx")
+pred_file = pd.ExcelFile("predicted_ranks.xlsx")
 
-**Steps:**
+# Load each sheet with correct index
+rank_sheets = {name: rank_file.parse(name).set_index('Group name') for name in rank_file.sheet_names}
+pred_sheets = {
+    'graph': pred_file.parse('graph').set_index('Species'),
+    'regression': pred_file.parse('regression').set_index('Species'),
+    'gcn': pred_file.parse('gcn').set_index('Species'),  # Added GCN-based predictions
+    'gcn_reg': pred_file.parse('gcn_reg').set_index('Species')
+    
+}
 
-1. **Load ground-truth rankings**
-   - Open `RANK.xlsx` as an Excel workbook.
-   - For each sheet:
-     - Read it into a DataFrame.
-     - Set `Group name` as the index.
-     - Store in a dictionary: `rank_sheets[ground_truth_name]`.
+# Define Top-K Agreement function
+def top_k_agreement(true_df, pred_df, k=5):
+    true_top_k = set(true_df.sort_values('Rank').head(k).index)
+    pred_top_k = set(pred_df.sort_values('Rank').head(k).index)
+    overlap = true_top_k & pred_top_k
+    return len(overlap) / k, overlap
 
-2. **Load predicted rankings**
-   - Open `predicted_ranks.xlsx`.
-   - For each prediction sheet (`graph`, `regression`, `gcn`, `gcn_reg`):
-     - Read into a DataFrame.
-     - Set `Species` as the index.
-     - Store in a dictionary: `pred_sheets[prediction_name]`.
+# Compare predictions with each ground truth sheet
+results = []
+for gt_name, gt_df in rank_sheets.items():
+    for pred_name, pred_df in pred_sheets.items():
+        top5_score, top5_overlap = top_k_agreement(gt_df, pred_df, k=5)
+        top10_score, top10_overlap = top_k_agreement(gt_df, pred_df, k=10)
+        results.append({
+            "Ground Truth": gt_name,
+            "Prediction": pred_name,
+            "Top-5 Agreement": top5_score,
+            "Top-5 Overlap": list(top5_overlap),
+            "Top-10 Agreement": top10_score,
+            "Top-10 Overlap": list(top10_overlap)
+        })
 
-3. **Define Top-K agreement function**
-   - Given a ground-truth DataFrame `true_df` and predicted DataFrame `pred_df`:
-     - Sort both by `Rank` in ascending order.
-     - Take the top-K indices (species names) from each.
-     - Compute the overlap between the two sets.
-     - Top-K Agreement = `|overlap| / K`.
-
-4. **Evaluate all ground truth × prediction pairs**
-   - For each ground-truth sheet `gt_name` in `rank_sheets`:
-     - For each prediction `pred_name` in `pred_sheets`:
-       - Compute Top-5 agreement and overlapping species.
-       - Compute Top-10 agreement and overlapping species.
-       - Append a result record:
-         - `Ground Truth`, `Prediction`,
-         - `Top-5 Agreement`, `Top-5 Overlap`,
-         - `Top-10 Agreement`, `Top-10 Overlap`.
-
-5. **Aggregate and save results**
-   - Convert the list of result records into a DataFrame `results_df`.
-   - Print `results_df` to the console.
-   - Save `results_df` to `top_k_similarity_results.csv`.
-
-**Output:**
-- CSV file `top_k_similarity_results.csv` summarising:
-  - Ground truth sheet name
-  - Prediction method
-  - Top-5 and Top-10 agreement scores
-  - Exact overlapping species in Top-5 and Top-10
+# Convert results to DataFrame
+results_df = pd.DataFrame(results)
+print(results_df)
+results_df.to_csv("top_k_similarity_results.csv", index=False)
 
