@@ -7,7 +7,7 @@ graph-based learning methods.
 ### 🔧 What the script does
 
 1. **Loads Ecopath-derived input data**  
-   For multiple ecosystems (e.g. Ecosystem 1, 2, 3/7, 4), it reads:
+   For multiple ecosystems (e.g. Ecosystem 1, 2, 3, 4), it reads:
    - `diet_matrix_ecosystemX.xlsx`  → trophic interaction (diet) matrix  
    - `biomass_ecosystemX.xlsx`      → biomass values per functional group  
    - `rank_ecosystemX.xlsx`         → Ecopath keystone ranking (training target)  
@@ -27,9 +27,9 @@ graph-based learning methods.
    models trained across multiple ecosystems are comparable.
 
 4. **Builds train/test split**
-   - Training ecosystems: 1, 2, 7  
+   - Training ecosystems: 1, 2, 3  
    - Test ecosystem: 3 (Canada example in this script)  
-   - `X_train` = features from ecosystems 1, 2, 7  
+   - `X_train` = features from ecosystems 1, 2, 3  
    - `y_train` = corresponding Ecopath-based keystone rank values  
    - `X_test`  = features from ecosystem 3  
 
