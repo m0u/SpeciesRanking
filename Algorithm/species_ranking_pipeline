@@ -50,18 +50,16 @@ graph-based learning methods.
    - Returns a final `EnsembleRank` series for the test ecosystem  
 
 7. **Saves all outputs**
-   - `ensemble_rank_ecosystem4.csv` – final ensemble ranking  
-   - `predicted_ranks_ecosystem3_canada.csv` – all model predictions  
-   - `predicted_ranks_ecosystem3_canada.xlsx` with four sheets:
+   - `ensemble_rank_ecosystem4.csv` – final ensemble ranking   
+   - `predicted_ranks_ecosystem3.xlsx` with four sheets:
      - `RF` – Random Forest ranks  
      - `LP` – Label Propagation ranks  
      - `GS` – GraphSAGE ranks  
      - `EM` – Ensemble ranks  
 
-8. **(Optional) Evaluation and plotting** *(currently commented out)*  
+8. **(Optional) Evaluation and plotting** 
    The script includes helper functions to:
    - Compute Top-k overlap between model-predicted rankings and Ecopath ranks  
    - Plot Top-k overlap curves for RF / LP / GS / Ensemble  
 
-Uncomment the relevant sections at the bottom of the script to enable
-quantitative evaluation and visual diagnostics.
+
