@@ -1,20 +1,67 @@
-### 🔥 Pipeline Steps
+## Species Ranking Pipeline (`species_ranking_pipeline.py`)
 
-1. Load Ecopath input:
-   - biomass
-   - diet matrix
-   - keystone ranking
+This script implements the full modelling pipeline used in the paper to estimate
+species importance across ecosystems using a combination of feature-based and
+graph-based learning methods.
 
-2. Compute features:
-   ✓ RTI from diet flow  
-   ✓ Network centrality (PR, Degree, Betweenness)  
-   ✓ Biomass scaling
+### 🔧 What the script does
 
-3. Train 3 ranking models:
-   - Random Forest
-   - Label Propagation
-   - GraphSAGE GNN
+1. **Loads Ecopath-derived input data**  
+   For multiple ecosystems (e.g. Ecosystem 1, 2, 3/7, 4), it reads:
+   - `diet_matrix_ecosystemX.xlsx`  → trophic interaction (diet) matrix  
+   - `biomass_ecosystemX.xlsx`      → biomass values per functional group  
+   - `rank_ecosystemX.xlsx`         → Ecopath keystone ranking (training target)  
 
-4. Generate ensemble ranking using weighted voting
+2. **Constructs node-level features** via `construct_features()`:
+   - Fills missing diet entries and builds a directed graph  
+   - Computes:
+     - RTI (Relative Total Impact) from the diet flow matrix  
+     - Degree, in-degree, out-degree  
+     - PageRank  
+     - Closeness and betweenness centrality  
+     - Biomass  
+   - Returns a feature matrix for each ecosystem (rows = species/groups)
 
-5. Export output as CSV + Excel for ecological interpretation
+3. **Normalizes features across ecosystems**  
+   Uses `MinMaxScaler` to bring all feature columns to a [0, 1] range so that
+   models trained across multiple ecosystems are comparable.
+
+4. **Builds train/test split**
+   - Training ecosystems: 1, 2, 7  
+   - Test ecosystem: 3 (Canada example in this script)  
+   - `X_train` = features from ecosystems 1, 2, 7  
+   - `y_train` = corresponding Ecopath-based keystone rank values  
+   - `X_test`  = features from ecosystem 3  
+
+5. **Trains three predictive models**
+   - **Random Forest Regressor**
+     - Learns a mapping from features → keystone rank scores  
+   - **Label Propagation**
+     - Semi-supervised learning on the combined feature space  
+     - Known labels: training ecosystems; unknown labels: test ecosystem  
+   - **GraphSAGE (GNN)**
+     - Builds a k-NN graph over all feature vectors using `kneighbors_graph`  
+     - Trains a GraphSAGE regression model (`GraphSAGE_Reg`) on known labels  
+
+6. **Generates an ensemble ranking**
+   - Converts RF, LP, and GS predictions into rank space  
+   - Computes a weighted ensemble:
+     - Weights: RF = 1, LP = 3, GS = 3  
+   - Returns a final `EnsembleRank` series for the test ecosystem  
+
+7. **Saves all outputs**
+   - `ensemble_rank_ecosystem4.csv` – final ensemble ranking  
+   - `predicted_ranks_ecosystem3_canada.csv` – all model predictions  
+   - `predicted_ranks_ecosystem3_canada.xlsx` with four sheets:
+     - `RF` – Random Forest ranks  
+     - `LP` – Label Propagation ranks  
+     - `GS` – GraphSAGE ranks  
+     - `EM` – Ensemble ranks  
+
+8. **(Optional) Evaluation and plotting** *(currently commented out)*  
+   The script includes helper functions to:
+   - Compute Top-k overlap between model-predicted rankings and Ecopath ranks  
+   - Plot Top-k overlap curves for RF / LP / GS / Ensemble  
+
+Uncomment the relevant sections at the bottom of the script to enable
+quantitative evaluation and visual diagnostics.
