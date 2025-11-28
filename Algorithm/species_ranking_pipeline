@@ -50,8 +50,7 @@ graph-based learning methods.
    - Returns a final `EnsembleRank` series for the test ecosystem  
 
 7. **Saves all outputs**
-   - `ensemble_rank_ecosystem4.csv` – final ensemble ranking   
-   - `predicted_ranks_ecosystem3.xlsx` with four sheets:
+   - `predicted_ranks.xlsx` with four sheets:
      - `RF` – Random Forest ranks  
      - `LP` – Label Propagation ranks  
      - `GS` – GraphSAGE ranks  
