@@ -54,3 +54,222 @@ Requirements:
 This script is intended to be run as a standalone analysis pipeline and is
 fully reproducible given the matching Ecopath-derived input files.
 """
+## import pandas as pd
+import numpy as np
+import pandas as pd
+import networkx as nx
+import torch
+import torch.nn.functional as F
+import matplotlib.pyplot as plt
+
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.semi_supervised import LabelPropagation
+from sklearn.neighbors import kneighbors_graph
+
+from torch_geometric.nn import SAGEConv
+from torch_geometric.utils import from_scipy_sparse_matrix
+
+# === Device ===
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+# === Feature Constructor ===
+def construct_features(diet_matrix, biomass_series):
+    F_matrix = diet_matrix.fillna(0)
+    col_sums = F_matrix.sum(axis=0).replace(0, np.nan)
+    row_sums = F_matrix.sum(axis=1).replace(0, np.nan)
+    G = F_matrix.div(col_sums, axis=1).fillna(0)
+    H = F_matrix.div(row_sums, axis=0).fillna(0)
+    Q = G - H.T
+    I = np.identity(Q.shape[0])
+    try:
+        M = np.linalg.inv(I - Q.values) - I
+    except np.linalg.LinAlgError:
+        M = np.zeros_like(Q.values)
+    RTI = pd.DataFrame(M, index=Q.index, columns=Q.columns)
+    RTI_score = RTI.sum(axis=1)
+
+    # G_net = nx.from_pandas_adjacency(F_matrix, create_using=nx.DiGraph)
+    # in_deg = dict(G_net.in_degree())
+    # out_deg = dict(G_net.out_degree())
+    # ext_deg = {k: in_deg.get(k, 0) + out_deg.get(k, 0) for k in G_net.nodes()}
+    # pagerank = nx.pagerank(G_net)
+
+    # df = pd.DataFrame({
+    #     'pagerank': pd.Series(pagerank),
+    #     'degree': pd.Series(ext_deg),
+    #     'RTI': RTI_score,
+    #     'biomass': biomass_series
+    # }).fillna(0)
+
+    G_net = nx.from_pandas_adjacency(F_matrix, create_using=nx.DiGraph)
+    in_deg = dict(G_net.in_degree())
+    out_deg = dict(G_net.out_degree())
+    ext_deg = {k: in_deg.get(k, 0) + out_deg.get(k, 0) for k in G_net.nodes()}
+    pagerank = nx.pagerank(G_net)
+    closeness = nx.closeness_centrality(G_net)
+    betweenness = nx.betweenness_centrality(G_net)
+
+    # Updated df
+    features = pd.DataFrame({
+        'pagerank': pd.Series(pagerank),
+        'degree': pd.Series(ext_deg),
+        'RTI': RTI_score,
+        'biomass': biomass_series,
+        'in_degree': pd.Series(in_deg),
+        'out_degree': pd.Series(out_deg),
+        'closeness': pd.Series(closeness),
+        'betweenness': pd.Series(betweenness),
+    }).fillna(0)
+    return features
+    print("Feature matrix shape:", features.shape)
+    display(features.head())
+
+# === GraphSAGE Model ===
+class GraphSAGE_Reg(torch.nn.Module):
+    def __init__(self, in_channels, hidden_channels):
+        super().__init__()
+        self.sage1 = SAGEConv(in_channels, hidden_channels)
+        self.sage2 = SAGEConv(hidden_channels, 1)
+
+    def forward(self, x, edge_index):
+        x = F.relu(self.sage1(x, edge_index))
+        return self.sage2(x, edge_index).squeeze()
+
+# === Load ecosystem data ===
+diet1 = pd.read_excel("diet_matrix_ecosystem1.xlsx", index_col=0)
+diet2 = pd.read_excel("diet_matrix_ecosystem2.xlsx", index_col=0)
+diet3 = pd.read_excel("diet_matrix_ecosystem7.xlsx", index_col=0)
+diet4 = pd.read_excel("diet_matrix_ecosystem3.xlsx", index_col=0)
+
+biomass1 = pd.read_excel("biomass_ecosystem1.xlsx", index_col=0).squeeze()
+biomass2 = pd.read_excel("biomass_ecosystem2.xlsx", index_col=0).squeeze()
+biomass3 = pd.read_excel("biomass_ecosystem7.xlsx", index_col=0).squeeze()
+biomass4 = pd.read_excel("biomass_ecosystem3.xlsx", index_col=0).squeeze()
+
+rank1 = pd.read_excel("rank_ecosystem1.xlsx", index_col=0).squeeze()
+rank2 = pd.read_excel("rank_ecosystem2.xlsx", index_col=0).squeeze()
+rank3 = pd.read_excel("rank_ecosystem7.xlsx", index_col=0).squeeze()
+
+# === Feature Extraction ===
+features1 = construct_features(diet1, biomass1)
+features2 = construct_features(diet2, biomass2)
+features3 = construct_features(diet3, biomass3)
+features4 = construct_features(diet4, biomass4)
+
+features1 = features1.apply(pd.to_numeric, errors='coerce')
+features2 = features2.apply(pd.to_numeric, errors='coerce')
+features3 = features3.apply(pd.to_numeric, errors='coerce')
+features4 = features4.apply(pd.to_numeric, errors='coerce')
+
+biomass1 = pd.to_numeric(biomass1.squeeze(), errors='coerce')
+biomass2 = pd.to_numeric(biomass2.squeeze(), errors='coerce')
+biomass3 = pd.to_numeric(biomass3.squeeze(), errors='coerce')
+biomass4 = pd.to_numeric(biomass4.squeeze(), errors='coerce')
+
+def load_rank(path):
+    df = pd.read_excel(path, index_col=0)
+    return pd.to_numeric(df.iloc[:, 0], errors='coerce')
+
+rank1 = load_rank("rank_ecosystem1.xlsx")
+rank2 = load_rank("rank_ecosystem2.xlsx")
+rank3 = load_rank("rank_ecosystem7.xlsx")
+
+# rank1 = pd.read_excel("rank_ecosystem1.xlsx", index_col=0).squeeze()
+# rank2 = pd.read_excel("rank_ecosystem2.xlsx", index_col=0).squeeze()
+
+# # rank3 = pd.read_excel("rank_ecosystem7.xlsx", index_col=0)
+# rank3 = pd.to_numeric(rank3.iloc[:, 0], errors='coerce')
+
+# Ensure all are Series
+rank1 = pd.to_numeric(rank1, errors='coerce')
+rank2 = pd.to_numeric(rank2, errors='coerce')
+rank3 = pd.to_numeric(rank3, errors='coerce')
+
+# === Normalize ===
+scaler = MinMaxScaler()
+X1 = pd.DataFrame(scaler.fit_transform(features1), index=features1.index, columns=features1.columns)
+X2 = pd.DataFrame(scaler.transform(features2), index=features2.index, columns=features2.columns)
+X3 = pd.DataFrame(scaler.transform(features3), index=features3.index, columns=features3.columns)
+X4 = pd.DataFrame(scaler.transform(features4), index=features4.index, columns=features4.columns)
+
+# === Train/Test Split ===
+X_train = pd.concat([X1, X2, X3])
+y_train = pd.concat([rank1, rank2, rank3])
+X_test = X4
+
+X_train = X_train.fillna(0)
+y_train = y_train.fillna(y_train.mean())
+
+# === Random Forest ===
+reg = RandomForestRegressor(random_state=42)
+reg.fit(X_train, y_train)
+reg_pred = pd.Series(reg.predict(X_test), index=X_test.index)
+
+# === Label Propagation ===
+X_all = pd.concat([X_train, X_test])
+y_all = pd.concat([y_train, pd.Series([np.nan] * len(X_test), index=X_test.index)])
+labels_lp = y_all.copy()
+labels_lp[labels_lp.isna()] = -1
+labels_lp = labels_lp.astype(int)
+lp_model = LabelPropagation()
+lp_model.fit(X_all, labels_lp)
+lp_pred = pd.Series(lp_model.transduction_[-len(X_test):], index=X_test.index)
+
+# === GraphSAGE ===
+X_tensor = torch.tensor(X_all.values, dtype=torch.float).to(device)
+y_tensor = torch.tensor(y_all.values, dtype=torch.float).to(device)
+adj = kneighbors_graph(X_all, n_neighbors=5, include_self=False)
+edge_index, _ = from_scipy_sparse_matrix(adj)
+edge_index = edge_index.to(device)
+
+mask = ~torch.isnan(y_tensor)
+model = GraphSAGE_Reg(X_tensor.shape[1], 16).to(device)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+
+for epoch in range(200):
+    model.train()
+    optimizer.zero_grad()
+    out = model(X_tensor, edge_index)
+    loss = F.mse_loss(out[mask], y_tensor[mask])
+    loss.backward()
+    optimizer.step()
+
+model.eval()
+with torch.no_grad():
+    out_all = model(X_tensor, edge_index).cpu().numpy()
+gcn_pred = pd.Series(out_all[-len(X_test):], index=X_test.index)
+
+# === Ensemble Prediction ===
+def weighted_rank_ensemble(preds_dict, weights):
+    df = pd.DataFrame(preds_dict)
+    rank_df = df.rank(method='average')
+    weighted = sum(rank_df[col] * weights[i] for i, col in enumerate(rank_df.columns)) / sum(weights)
+    return weighted.sort_values()
+
+ensemble_rank = weighted_rank_ensemble(
+    {"rf": reg_pred, "lp": lp_pred, "gcn": gcn_pred},
+    weights=[1, 3, 3]
+)
+ensemble_rank.name = "EnsembleRank"
+ensemble_rank.to_csv("ensemble_rank_ecosystem4.csv")
+
+# === Save All Predictions ===
+preds_df = pd.concat([
+    reg_pred.rename("RandomForest"),
+    lp_pred.rename("LabelPropagation"),
+    gcn_pred.rename("GraphSAGE"),
+    ensemble_rank.rename("Ensemble")
+], axis=1)
+preds_df.to_csv("predicted_ranks_ecosystem3_canada.csv")
+
+with pd.ExcelWriter("predicted_ranks_ecosystem3_canada.xlsx") as writer:
+    reg_pred.rank(ascending=False, method='min').rename("Rank").to_frame().to_excel(writer, sheet_name="RF")
+    lp_pred.rank(ascending=False, method='min').rename("Rank").to_frame().to_excel(writer, sheet_name="LP")
+    gcn_pred.rank(ascending=False, method='min').rename("Rank").to_frame().to_excel(writer, sheet_name="GS")
+    # ensemble_rank.rank(ascending=False, method='min').rename("Rank").to_frame().to_excel(writer, sheet_name="EM")
+    # Ensure the index of ensemble_rank matches the original species order (e.g., from reg_pred.index)
+    ensemble_rank = ensemble_rank.reindex(reg_pred.index)
+    ensemble_rank.rank(ascending=False, method='min').rename("Rank").to_frame().to_excel(writer, sheet_name="EM")
+
+
