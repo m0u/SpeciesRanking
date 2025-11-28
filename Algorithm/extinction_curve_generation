@@ -1,1 +1,67 @@
+### Algorithm: Extinction Curve Computation from Ranking Sheets
+
+This script evaluates how species removals propagate through a food web by simulating
+stepwise extinction cascades using diet-matrix trophic links. The output is an
+extinction-response curve for each ranking sheet, including AUC (area under curve) as
+a resilience or vulnerability metric.
+
+---
+
+**Input:**
+- `diet_matrix.csv` → Interaction matrix (predator × prey)  
+- `rank_ecosystem.xlsx` → Multiple sheets of species ranking lists  
+  (each sheet represents one ranking method or reference index)
+
+---
+
+#### Steps:
+
+1. **Load diet matrix**
+   - Read trophic interaction matrix into `diet_df`.
+   - Extract species list and build index mapping.
+   - Convert to Numpy array for fast matrix operations.
+
+2. **Load ranking sheets**
+   - Open Excel file containing multiple ranking outputs.
+   - Each sheet contains two columns:
+     - `Species`
+     - `Rank` (1 = most important, highest priority for removal)
+
+3. **Simulate ideal extinction curve (upper-bound collapse trajectory)**
+   - Remove species sequentially without ranking bias.
+   - After each removal:
+     - Set its row/column in diet matrix = 0 (no feeding interactions)
+     - Secondary extinctions occur when species have no remaining prey support
+   - Track fraction of extinct species after each removal.
+
+4. **Simulate extinction curves for each ranking sheet**
+   - For each sheet `S` in the Excel workbook:
+     - Sort species by `Rank` ascending.
+     - Remove species sequentially in that order.
+     - After each removal:
+       - Zero-out its row/column in the diet matrix
+       - Identify species that lose all prey support → secondary extinction
+     - Compute:
+       - Extinction fraction after each removal
+       - AUC of the extinction curve → collapse severity/robustness metric
+
+5. **Plot results**
+   - X-axis = fraction of species removed
+   - Y-axis = fraction of total species extinct (primary + secondary)
+   - Plot extinction curve per ranking sheet + ideal collapse reference
+   - Add legend showing AUC score for each method
+
+---
+
+**Output:**
+- Extinction curves for each ranking method
+- AUC score annotated in legend
+- Visualization comparing collapse dynamics across ranking strategies
+
+---
+
+**Interpretation:**
+- **Lower AUC** → rapid collapse → ranking identifies ecologically critical species  
+- **Higher AUC** → slower collapse → system more resilient under ranking removal  
+- Used to compare robustness of keystone prediction methods
 
